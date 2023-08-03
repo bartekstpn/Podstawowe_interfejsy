@@ -18,7 +18,6 @@ https://api.open-meteo.com/v1/forecast?latitude={latitude}&longitude={longitude}
 W URL należy uzupełnić parametry: latitude, longitude oraz searched_date
 '''
 
-
 import json
 from datetime import datetime, timedelta
 import requests
@@ -32,10 +31,14 @@ def retrieve_data_from_api(latitude, longitude, searched_date):
     response = requests.get(API_URL.format(latitude=latitude, longitude=longitude, searched_date=searched_date))
     data = json.loads(response.text)
     return data
+
+
 def find_coordinates_for_city(city):
     geolocator = Nominatim(user_agent="MyApp")
     location = geolocator.geocode(city)
     return location.latitude, location.longitude
+
+
 
 def check_raining_sum(data: dict):
     raining_sum = data.get("daily").get("rain_sum")[0]
@@ -46,11 +49,12 @@ def check_raining_sum(data: dict):
     else:
         return "Nie wiem"
 
+
 def read_data_from_file():
     with open("opady.txt", mode="a+") as file:
         data_in_file = file.read()
+        return json.loads(data_in_file) if data_in_file else {}
 
-    return json.loads(data_in_file) if data_in_file else {}
 
 def transform_data_in_file(data, city, date, raining_info):
     if data.get(city):
@@ -66,7 +70,6 @@ def write_data_to_file(data, city, date, raining_info):
         new_data = transform_data_in_file(data, city, date, raining_info)
         file.write(new_data)
 
-
 def retrieve_data(file_data, city, date):
     city_data = file_data.get(city)
     if city_data:
@@ -77,16 +80,20 @@ def retrieve_data(file_data, city, date):
     raining_data = check_raining_sum(data)
     return raining_data, True
 
-city = input("Podaj miasto, dla którego chcesz sprawdzić pogodę: ")
-date = input("Podaj datę, dla której chcesz sprawdzić pogodę: ")
-if not date:
-    date = datetime.now()
-    date = date + timedelta(1)
-    date = date.strftime('%Y-%m-%d')
-    print("Nie podano daty, wyświetlono najbliższy dzień")
-data = read_data_from_file()
-raining_data, write_new_data_to_file = retrieve_data(data, city, date)
-if write_new_data_to_file:
-    write_data_to_file(data, city, date, raining_data)
+try:
+    city = input("Podaj miasto, dla którego chcesz sprawdzić pogodę: ")
+    date = input("Podaj datę, dla której chcesz sprawdzić pogodę: (YYYY-MM-DD)")
+    if not date:
+        date = datetime.now()
+        date = date + timedelta(1)
+        date = date.strftime('%Y-%m-%d')
+        print("Nie podano daty, wyświetlono najbliższy dzień")
+    data = read_data_from_file()
+    raining_data, write_new_data_to_file = retrieve_data(data, city, date)
+    if write_new_data_to_file:
+        write_data_to_file(data, city, date, raining_data)
+        print(data)
+except: print("Nie znaleziono miasta lub podano datę w złym formacie")
 
-print(data)
+
+#    print("Nie znaleziono miasta / Podano datę w złym formacie")
