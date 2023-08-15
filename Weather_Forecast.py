@@ -1,7 +1,7 @@
 import json
 
 import requests
-from geopy import Nominatim
+import geopy
 from datetime import datetime, timedelta
 
 
@@ -33,17 +33,24 @@ class WeatherForecast:
     def retrieve_data_from_api(self, latitude, longitude):
         response = requests.get(API_URL.format(latitude=latitude, longitude=longitude, searched_date=self.date))
         data = json.loads(response.text)
-        return data
+        if response.status_code == 200:
+            return data
+        else:
+            raise ConnectionError
+
 
     def find_coordinates_for_city(self):
-        geolocator = Nominatim(user_agent="MyApp")
-        location = geolocator.geocode(self.city)
-        return location.latitude, location.longitude
+        try:
+            geolocator = geopy.Nominatim(user_agent="MyApp")
+            location = geolocator.geocode(self.city)
+            return location.latitude, location.longitude
+        except:
+            print("Błąd lokalizacji GPS")
 
     def check_raining_sum(self, data):
         raining_sum = data.get("daily").get("rain_sum")[0]
         if raining_sum > 0.0:
-            return "Bedzie padać"
+            return "Bedzie padac"
         elif raining_sum == 0.0:
             return "Nie bedzie padac"
         else:
